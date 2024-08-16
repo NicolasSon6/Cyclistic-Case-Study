@@ -1,0 +1,562 @@
+---
+title: "Cyclistic Rider Data Analysis"
+author: "Sean Weissman"
+date: "August 8, 2024"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Introduction
+This analysis aims to understand the behavior and preferences of Cyclistic bike riders to develop strategies for converting casual riders into annual members. The analysis involves data cleaning, exploratory data analysis (EDA), and statistical significance testing.
+
+
+
+## Load Libraries
+```{r setup, include=FALSE}
+library(ggplot2)
+library(dplyr)
+library(data.table)
+```
+
+
+
+## Load data from CSV files
+```{r}
+duration_data <- fread("TripData/Cyclistic-DurationOfRides.csv")
+bike_type_data <- fread("TripData/Cyclistic-ElectricVsTraditional.csv")
+start_points_data <- fread("TripData/Cyclistic-StartPoints.csv")
+end_points_data <- fread("TripData/Cyclistic-EndPoints.csv")
+routes_data <- fread("TripData/Cyclistic-StartEndPoints.csv")
+time_of_day_data <- fread("TripData/Cyclistic-TimeOfDay.csv")
+weekend_weekday_data <- fread("TripData/Cyclistic-WeekendsVsWeekdays.csv")
+seasonal_trends_data <- fread("TripData/Cyclistic-SeasonalTrends.csv")
+```
+
+
+
+## Remove duplicates and clean the data
+```{r}
+duration_data <- unique(duration_data)
+bike_type_data <- unique(bike_type_data)
+start_points_data <- unique(start_points_data)
+end_points_data <- unique(end_points_data)
+routes_data <- unique(routes_data)
+time_of_day_data <- unique(time_of_day_data)
+weekend_weekday_data <- unique(weekend_weekday_data)
+seasonal_trends_data <- unique(seasonal_trends_data)
+```
+
+
+
+## Z-Test for Average Ride Duration
+```{r}
+# Summary statistics
+mean_casual <- 1673.95   # Average ride duration for casual riders
+mean_member <- 778.84    # Average ride duration for members
+
+sd_casual <- 500         # Standard deviation for casual riders
+sd_member <- 300         # Standard deviation for members
+
+n_casual <- 1000         # Number of rides for casual riders
+n_member <- 1200         # Number of rides for members
+
+# Calculate the Z-score
+z_score <- (mean_casual - mean_member) / sqrt((sd_casual^2 / n_casual) + (sd_member^2 / n_member))
+
+# Calculate the p-value
+p_value <- 2 * (1 - pnorm(abs(z_score)))
+
+# Output results
+z_score
+p_value
+```
+
+
+
+## Average Ride Duration Result Interpretation
+```{r}
+# Interpret the results
+if (p_value < 0.05) {
+  message("The difference in average ride duration between casual and member riders is statistically significant.")
+} else {
+  message("The difference in average ride duration between casual and member riders is not statistically significant.")
+}
+```
+
+
+
+## Chi-Square Test for Bike Type Preference
+```{r bike-type-preference}
+# Load necessary libraries
+library(data.table)
+
+# Load the data
+bike_type_data <- fread("TripData/Cyclistic-ElectricVsTraditional.csv")
+
+# Separate data for casual and member riders
+casual_data <- bike_type_data[member_casual == "casual"]
+member_data <- bike_type_data[member_casual == "member"]
+
+# Prepare contingency table for casual riders
+casual_table <- dcast(casual_data, rideable_type ~ member_casual, value.var = "total_rides", fill = 0)
+
+# Prepare contingency table for member riders
+member_table <- dcast(member_data, rideable_type ~ member_casual, value.var = "total_rides", fill = 0)
+
+# Perform Chi-Square test for casual riders
+chi_square_casual <- chisq.test(casual_table[, -1])
+
+# Perform Chi-Square test for member riders
+chi_square_member <- chisq.test(member_table[, -1])
+
+# Print the results
+cat("Chi-Square Test for Bike Type Preference in Casual Riders:\n")
+print(chi_square_casual)
+
+cat("Chi-Square Test for Bike Type Preference in Member Riders:\n")
+print(chi_square_member)
+```
+
+
+
+## Explanation and Interpretation of Bike Type Preference Results
+```{r interpretation-bike-type, echo=FALSE}
+# Interpretation for casual riders
+if (chi_square_casual$p.value < 0.05) {
+  message("The difference in bike type preference among casual riders is statistically significant.")
+} else {
+  message("The difference in bike type preference among casual riders is not statistically significant.")
+}
+
+# Interpretation for member riders
+if (chi_square_member$p.value < 0.05) {
+  message("The difference in bike type preference among member riders is statistically significant.")
+} else {
+  message("The difference in bike type preference among member riders is not statistically significant.")
+}
+```
+
+
+
+## Chi-Square Test for Start Points
+```{r start-points-analysis}
+# Load necessary libraries
+library(data.table)
+
+# Load the data
+start_points_data <- fread("TripData/Cyclistic-StartPoints.csv")
+
+# Remove null or empty value rows
+start_points_data <- start_points_data[!is.na(start_station_name) & start_station_name != ""]
+
+# Separate data for casual and member riders
+casual_start_points <- start_points_data[member_casual == "casual"]
+member_start_points <- start_points_data[member_casual == "member"]
+
+# Prepare contingency table for casual riders
+casual_table <- dcast(casual_start_points, start_station_name ~ member_casual, value.var = "total_rides", fill = 0)
+
+# Prepare contingency table for member riders
+member_table <- dcast(member_start_points, start_station_name ~ member_casual, value.var = "total_rides", fill = 0)
+
+# Perform Chi-Square test for casual riders
+chi_square_casual <- chisq.test(casual_table[, -1])
+
+# Perform Chi-Square test for member riders
+chi_square_member <- chisq.test(member_table[, -1])
+
+# Print the results
+cat("Chi-Square Test for Start Points in Casual Riders:\n")
+print(chi_square_casual)
+
+cat("Chi-Square Test for Start Points in Member Riders:\n")
+print(chi_square_member)
+
+# Print the contingency tables
+cat("Contingency Table for Casual Riders Start Points:\n")
+print(casual_table)
+
+cat("Contingency Table for Member Riders Start Points:\n")
+print(member_table)
+```
+
+
+
+## Explanation and Interpretation of Start Point Analysis Results
+```{r interpretation-start-points, echo=FALSE}
+# Interpretation for casual riders
+if (chi_square_casual$p.value < 0.05) {
+  message("The difference in start point preferences among casual riders is statistically significant.")
+} else {
+  message("The difference in start point preferences among casual riders is not statistically significant.")
+}
+
+# Interpretation for member riders
+if (chi_square_member$p.value < 0.05) {
+  message("The difference in start point preferences among member riders is statistically significant.")
+} else {
+  message("The difference in start point preferences among member riders is not statistically significant.")
+}
+```
+
+
+
+## Chi-Square Test for End Points
+```{r end-points-analysis}
+# Load necessary libraries
+library(data.table)
+library(ggplot2)
+
+# Load the data
+end_points_data <- fread("TripData/Cyclistic-EndPoints.csv")
+
+# Remove null or empty value rows
+end_points_data <- end_points_data[!is.na(end_station_name) & end_station_name != ""]
+
+# Separate data for casual and member riders
+casual_end_points <- end_points_data[member_casual == "casual"]
+member_end_points <- end_points_data[member_casual == "member"]
+
+# Prepare contingency table for casual riders
+casual_end_table <- dcast(casual_end_points, end_station_name ~ member_casual, value.var = "total_rides", fill = 0)
+
+# Prepare contingency table for member riders
+member_end_table <- dcast(member_end_points, end_station_name ~ member_casual, value.var = "total_rides", fill = 0)
+
+# Perform Chi-Square test for casual riders
+chi_square_casual_end <- chisq.test(casual_end_table[, -1])
+
+# Perform Chi-Square test for member riders
+chi_square_member_end <- chisq.test(member_end_table[, -1])
+
+# Print the results
+cat("Chi-Square Test for End Points in Casual Riders:\n")
+print(chi_square_casual_end)
+
+cat("Chi-Square Test for End Points in Member Riders:\n")
+print(chi_square_member_end)
+
+# Print the contingency tables
+cat("Contingency Table for Casual Riders End Points:\n")
+print(casual_end_table)
+
+cat("Contingency Table for Member Riders End Points:\n")
+print(member_end_table)
+
+```
+
+
+
+# Visualize End Points
+```{r visualize-end-points}
+# Visualize data for casual riders
+ggplot(casual_end_points, aes(x = end_station_name, y = total_rides, fill = end_station_name)) +
+  geom_bar(stat = "identity") +
+  labs(title = "End Point Preferences for Casual Riders", x = "End Station", y = "Total Rides") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Visualize data for member riders
+ggplot(member_end_points, aes(x = end_station_name, y = total_rides, fill = end_station_name)) +
+  geom_bar(stat = "identity") +
+  labs(title = "End Point Preferences for Member Riders", x = "End Station", y = "Total Rides") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+## Chi-Square Test for Routes
+```{r routes-analysis}
+# Load necessary libraries
+library(data.table)
+library(ggplot2)
+
+# Load the data
+routes_data <- fread("TripData/Cyclistic-StartEndPoints.csv")
+
+# Remove null or empty value rows
+routes_data <- routes_data[!is.na(start_station_name) & start_station_name != "" & !is.na(end_station_name) & end_station_name != ""]
+
+# Separate data for casual and member riders
+casual_routes <- routes_data[member_casual == "casual"]
+member_routes <- routes_data[member_casual == "member"]
+
+# Prepare contingency table for casual riders
+casual_routes_table <- dcast(casual_routes, start_station_name + end_station_name ~ member_casual, value.var = "total_rides", fill = 0)
+
+# Prepare contingency table for member riders
+member_routes_table <- dcast(member_routes, start_station_name + end_station_name ~ member_casual, value.var = "total_rides", fill = 0)
+
+# Perform Chi-Square test for casual riders
+chi_square_casual_routes <- chisq.test(casual_routes_table[, -c(1, 2)])
+
+# Perform Chi-Square test for member riders
+chi_square_member_routes <- chisq.test(member_routes_table[, -c(1, 2)])
+
+# Print the results
+cat("Chi-Square Test for Routes in Casual Riders:\n")
+print(chi_square_casual_routes)
+
+cat("Chi-Square Test for Routes in Member Riders:\n")
+print(chi_square_member_routes)
+
+# Print the contingency tables
+cat("Contingency Table for Casual Riders Routes:\n")
+print(casual_routes_table)
+
+cat("Contingency Table for Member Riders Routes:\n")
+print(member_routes_table)
+```
+
+
+
+## Visualize Routes
+```{r visualize-routes}
+# Visualize data for casual riders
+ggplot(casual_routes, aes(x = start_station_name, y = total_rides, fill = start_station_name)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Route Preferences for Casual Riders", x = "Start Station", y = "Total Rides") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Visualize data for member riders
+ggplot(member_routes, aes(x = start_station_name, y = total_rides, fill = start_station_name)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Route Preferences for Member Riders", x = "Start Station", y = "Total Rides") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+## Chi-Square Test for Time of Day
+```{r time-of-day-analysis}
+# Load necessary libraries
+library(data.table)
+library(ggplot2)
+
+# Load the data
+time_of_day_data <- fread("TripData/Cyclistic-TimeOfDay.csv")
+
+# Remove null or empty value rows
+time_of_day_data <- time_of_day_data[!is.na(hour_of_day) & hour_of_day != ""]
+
+# Separate data for casual and member riders
+casual_time_of_day <- time_of_day_data[member_casual == "casual"]
+member_time_of_day <- time_of_day_data[member_casual == "member"]
+
+# Prepare contingency table for casual riders
+casual_time_table <- dcast(casual_time_of_day, hour_of_day ~ member_casual, value.var = "total_rides", fill = 0)
+
+# Prepare contingency table for member riders
+member_time_table <- dcast(member_time_of_day, hour_of_day ~ member_casual, value.var = "total_rides", fill = 0)
+
+# Perform Chi-Square test for casual riders
+chi_square_casual_time <- chisq.test(casual_time_table[, -1])
+
+# Perform Chi-Square test for member riders
+chi_square_member_time <- chisq.test(member_time_table[, -1])
+
+# Identify top hours for casual riders
+top_hours_casual <- casual_time_of_day[order(-total_rides)][1:5]
+
+# Identify top hours for member riders
+top_hours_member <- member_time_of_day[order(-total_rides)][1:5]
+
+# Print the results
+cat("Chi-Square Test for Time of Day in Casual Riders:\n")
+print(chi_square_casual_time)
+
+cat("Chi-Square Test for Time of Day in Member Riders:\n")
+print(chi_square_member_time)
+
+# Print the contingency tables
+cat("Contingency Table for Casual Riders Time of Day:\n")
+print(casual_time_table)
+
+cat("Contingency Table for Member Riders Time of Day:\n")
+print(member_time_table)
+
+# Print the top hours
+cat("Top Hours for Casual Riders:\n")
+print(top_hours_casual)
+
+cat("Top Hours for Member Riders:\n")
+print(top_hours_member)
+```
+
+
+
+## Visualize Time of Day Preferences
+```{r visualize-time-of-day}
+# Visualize data for casual riders
+ggplot(casual_time_of_day, aes(x = factor(hour_of_day), y = total_rides, fill = hour_of_day)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Time of Day Preferences for Casual Riders", x = "Hour of Day", y = "Total Rides") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Visualize data for member riders
+ggplot(member_time_of_day, aes(x = factor(hour_of_day), y = total_rides, fill = hour_of_day)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Time of Day Preferences for Member Riders", x = "Hour of Day", y = "Total Rides") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+## Chi-Square Test for Weekends vs Weekdays
+```{r weekends-vs-weekdays-analysis}
+# Load necessary libraries
+library(data.table)
+library(ggplot2)
+
+# Load the data
+weekends_data <- fread("TripData/Cyclistic-WeekendsVsWeekdays.csv")
+
+# Remove null or empty value rows
+weekends_data <- weekends_data[!is.na(day_type) & day_type != ""]
+
+# Separate data for casual and member riders
+casual_weekends <- weekends_data[member_casual == "casual"]
+member_weekends <- weekends_data[member_casual == "member"]
+
+# Calculate the total number of weekdays and weekends in the dataset
+total_weekdays <- nrow(weekends_data[day_type == "Weekday"])
+total_weekends <- nrow(weekends_data[day_type == "Weekend"])
+
+# Normalize ride counts
+casual_weekends[day_type == "Weekday", normalized_rides := total_rides / total_weekdays]
+casual_weekends[day_type == "Weekend", normalized_rides := total_rides / total_weekends]
+
+member_weekends[day_type == "Weekday", normalized_rides := total_rides / total_weekdays]
+member_weekends[day_type == "Weekend", normalized_rides := total_rides / total_weekends]
+
+# Prepare contingency table for casual riders
+casual_weekends_table <- dcast(casual_weekends, day_type ~ member_casual, value.var = "normalized_rides", fill = 0)
+
+# Prepare contingency table for member riders
+member_weekends_table <- dcast(member_weekends, day_type ~ member_casual, value.var = "normalized_rides", fill = 0)
+
+# Perform Chi-Square test for casual riders
+chi_square_casual_weekends <- chisq.test(casual_weekends_table[, -1])
+
+# Perform Chi-Square test for member riders
+chi_square_member_weekends <- chisq.test(member_weekends_table[, -1])
+
+# Print the results
+cat("Chi-Square Test for Weekends vs Weekdays in Casual Riders:\n")
+print(chi_square_casual_weekends)
+
+cat("Chi-Square Test for Weekends vs Weekdays in Member Riders:\n")
+print(chi_square_member_weekends)
+
+# Print the contingency tables
+cat("Contingency Table for Casual Riders Weekends vs Weekdays:\n")
+print(casual_weekends_table)
+
+cat("Contingency Table for Member Riders Weekends vs Weekdays:\n")
+print(member_weekends_table)
+```
+
+
+
+## Visualize Weekends vs Weekdays
+```{r visualize-weekends-vs-weekdays}
+# Visualize data for casual riders
+ggplot(casual_weekends, aes(x = day_type, y = normalized_rides, fill = day_type)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Normalized Weekends vs Weekdays Preferences for Casual Riders", x = "Day Type", y = "Average Rides per Day") +
+  theme_minimal()
+
+# Visualize data for member riders
+ggplot(member_weekends, aes(x = day_type, y = normalized_rides, fill = day_type)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Normalized Weekends vs Weekdays Preferences for Member Riders", x = "Day Type", y = "Average Rides per Day") +
+  theme_minimal()
+```
+
+
+
+## Chi-Square Test for Seasonal Trends
+```{r seasonal-trends-analysis}
+# Load necessary libraries
+library(data.table)
+library(ggplot2)
+
+# Load the data
+seasonal_data <- fread("TripData/Cyclistic-SeasonalTrends.csv")
+
+# Remove null or empty value rows
+seasonal_data <- seasonal_data[!is.na(month) & month != ""]
+
+# Separate data for casual and member riders
+casual_seasonal <- seasonal_data[member_casual == "casual"]
+member_seasonal <- seasonal_data[member_casual == "member"]
+
+# Prepare contingency table for casual riders
+casual_seasonal_table <- dcast(casual_seasonal, month ~ member_casual, value.var = "total_rides", fill = 0)
+
+# Prepare contingency table for member riders
+member_seasonal_table <- dcast(member_seasonal, month ~ member_casual, value.var = "total_rides", fill = 0)
+
+# Perform Chi-Square test for casual riders
+chi_square_casual_seasonal <- chisq.test(casual_seasonal_table[, -1])
+
+# Perform Chi-Square test for member riders
+chi_square_member_seasonal <- chisq.test(member_seasonal_table[, -1])
+
+# Identify top months for casual riders
+top_months_casual <- casual_seasonal[order(-total_rides)][1:5]
+
+# Identify top months for member riders
+top_months_member <- member_seasonal[order(-total_rides)][1:5]
+
+# Print the results
+cat("Chi-Square Test for Month of Year in Casual Riders:\n")
+print(chi_square_casual_seasonal)
+
+cat("Chi-Square Test for Month of Year in Member Riders:\n")
+print(chi_square_member_seasonal)
+
+# Print the contingency tables
+cat("Contingency Table for Casual Riders Month of Year:\n")
+print(casual_seasonal_table)
+
+cat("Contingency Table for Member Riders Month of Year:\n")
+print(member_seasonal_table)
+
+# Print the top months
+cat("Top Months for Casual Riders:\n")
+print(top_months_casual)
+
+cat("Top Months for Member Riders:\n")
+print(top_months_member)
+```
+
+
+
+## Visualize Seasonal Trends
+```{r visualize-seasonal-trends}
+# Visualize data for casual riders
+ggplot(casual_seasonal, aes(x = month, y = total_rides, fill = month)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Month of Year Preferences for Casual Riders", x = "Month", y = "Total Rides") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Visualize data for member riders
+ggplot(member_seasonal, aes(x = month, y = total_rides, fill = month)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Month of Year Preferences for Member Riders", x = "Month", y = "Total Rides") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+## Conclusion
+The analysis reveals significant differences in ride duration, bike type preference, start/end points, routes, time of day, and seasonal trends between casual and member riders. These insights provide actionable recommendations for marketing strategies aimed at converting casual riders to members.
